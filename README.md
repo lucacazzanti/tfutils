@@ -1,5 +1,5 @@
 # tfutils
-## A library for parsing Tracab XML files of soccer data.
+## A library for parsing Tracab soccer data from XML files.
 
 Utilities to parse and plot soccer data from XML files 
 provide by Tracab. Main features:
@@ -12,8 +12,7 @@ provide by Tracab. Main features:
 * Intuitive interface to plotting heatmaps for teams and players.
   Example:
   ```
-  source.player_possession_heatmap(player='12345', possession='in')
-  p = source.team_heatmap(team='home', hm_type='attack')
+  p = source.team_heatmap(team='home', hm_type='overall')
   ```
   ![image](https://user-images.githubusercontent.com/2517549/200660261-45efed04-8495-4faa-bc17-77b56bbd6559.png)
   
@@ -48,7 +47,7 @@ source.get_team_players('home')
 ```
 ![image](https://user-images.githubusercontent.com/2517549/200660485-7f08d43d-c667-4348-8187-d70e201d3810.png)
 ```
-p = source.team_possession_heatmap(team='home', hm_type='first-half')
+p = source.team_possession_heatmap(team='away', hm_type='first-half')
 ```
 ![image](https://user-images.githubusercontent.com/2517549/200660885-69e652e1-56b0-4cc2-8045-f3f7cfb91b82.png)
 ```
