@@ -1,5 +1,5 @@
 # tfutils
-## A library for parsing Tracab XML files of soccer data.
+## A library for parsing Tracab soccer data from XML files.
 
 Utilities to parse and plot soccer data from XML files 
 provide by Tracab. Main features:
