@@ -3,15 +3,15 @@
 Provides set of utilities to parse and plot soccer data 
 provided by Tracab in XML files. Main features:
 * Uses soccer sematics to access entitites like teams and players.
-  Ex: 
-  home_team = source.get_team('home')
-  player = source.get_player('Lionel MESSI')
+Example: 
+home_team = source.get_team('home')
+player = source.get_player('Lionel MESSI')
 * Intuitive interface to plotting heatmaps for teams and players.
-  Ex:
-  source.player_possession_heatmap(player='12345', possession='in')
-  source.team_heatmap(team='home', hm_type='attack')
+Example:
+source.player_possession_heatmap(player='12345', possession='in')
+source.team_heatmap(team='home', hm_type='attack')
 * Retains the methods and attributes of xml.etree.ElelemntTree.ElementTree,
-  from which it inherits, allowing low-level access to the underlying data. 
+from which it inherits, allowing low-level access to the underlying data. 
     
 At the moment only Tracab TF05 XML files are supported.
 
