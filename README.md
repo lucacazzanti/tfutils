@@ -59,13 +59,13 @@ p = source.player_heatmap(player='431495')
 ```
 > git clone git@github.com:your_fork/tfutils.git
 > cd tfutils
-> pip install -r requirements .
+> pip install -r requirements.txt .
 
 # Or, to install the dev version:
-> pip install -r requirements -e .
+> pip install -r requirements.txt -e .
  
  # If you prefer make:
 > make install 
-> # or ...
+# or ...
 > make dev-install
 ```
