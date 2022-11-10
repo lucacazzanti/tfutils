@@ -54,3 +54,12 @@ p = source.team_possession_heatmap(team='away', hm_type='first-half')
 p = source.player_heatmap(player='431495')
 ```
 ![image](https://user-images.githubusercontent.com/2517549/200661408-abe482da-8885-4bbc-8d6b-17a40f46d7c8.png)
+
+## Installation
+```
+git clone git@github.com:your_fork/tfutils.git
+cd tfutils
+make install #or make dev-install for the dev version
+# if you don't have make:
+pip install . # or pip install -e . for the dev version
+```
