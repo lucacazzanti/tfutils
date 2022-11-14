@@ -27,13 +27,13 @@ source.team_heatmap(team='home', hm_type='attack')
 source.player_possession_heatmap(player='12345', possession='in')
 """  
 
-from xml.etree.ElementTree import ElementTree
-from xml.etree.ElementTree import Element
+from typing import Tuple, Union
+from xml.etree.ElementTree import Element, ElementTree
+
+import matplotlib.pyplot as plt
 import mplsoccer as mpl
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-from typing import Union, Tuple
+
 
 class TracabTf05Xml(ElementTree):
     """Tracab TF05 XML file parser and plotter.
@@ -49,7 +49,7 @@ class TracabTf05Xml(ElementTree):
         pitch_width: the width of the soccer pitch to use as input to Pitch() (deafult is 68)
         pitch_type: the type of soccer pitch to use as input to Pitch() (default is 'skillcorner')
     
-    Attributes (read-only):
+    Attributes:
         f05_fname:
         match_id:
         home_team_name:
@@ -113,6 +113,10 @@ class TracabTf05Xml(ElementTree):
         # Defaults for plotting the pitch and the heatmap
         self.__default_pitch_kwargs = {'line_zorder': 2, 'pitch_color': '#22312b', 'line_color': 'black'}
         self.__default_heatmap_kwargs = {'cmap': 'Blues'}
+        # These come straight from a pitch.grid() example on mplsoccer
+        self.__default_grid_kwargs = {'endnote_height': 0.03, 'endnote_space': 0,
+            'grid_width': 0.88, 'left': 0.025, 'title_height': 0.06, 'title_space': 0,
+            'axis': False, 'grid_height': 0.86, 'figheight': 6.5}
         
         ElementTree.__init__(self)
         
@@ -172,22 +176,26 @@ class TracabTf05Xml(ElementTree):
         
         The defaults provide a quick, no-fuss path to plotting the data, and work well and have been tested
         in conjunction to the default pitch dimensions and pitch type arguments to the class constructor.
-        The plotting methods use these defaults unless they are overridden in the argument list.
-        The default values are read-only, and this method merely returns their values for inspection.
+        The plotting methods use these defaults unless they are overridden in their argument list.
+        The default values are read-only, and this method returns their values for inspection.
 
         Returns:
             A dictionary with these keys:
               'heatmap_kwargs': the dictionary of default keyword arguments to the pitch.heatmap()
                 method from the mplsoccer package, which is called by the plotting methods.
-              'pitch_kwargs': the dicitonary of default keyword arguments to the Pitch() constructor
-                from the mplsoccer package, which is called by the plotting methods. 
+              'pitch_kwargs': the dictionary of default keyword arguments to the Pitch() constructor
+                from the mplsoccer package, which is called by the plotting methods.
+              'grid_kwargs': the dictionary of default keyword arguments to the pitch.grid() method
+                from the mplsoccer package, which is called by the plotting methods.    
         """
-        return {'heatmap_kwargs': self.__default_heatmap_kwargs, 'pitch_kwargs': self.__default_pitch_kwargs}
+        return {'heatmap_kwargs': self.__default_heatmap_kwargs,
+                'pitch_kwargs': self.__default_pitch_kwargs,
+                'grid_kwargs': self.__default_grid_kwargs}
 
     def parse(self) -> None:
         """Parses the XML document.
         
-        Parses the XML document and initialize attributes with 
+        Parses the XML document and initializes the attributes with 
         the parsed information.
 
         Returns:
@@ -238,8 +246,15 @@ class TracabTf05Xml(ElementTree):
         hm_array = (np.array([int(c) for c in hm_string])).reshape(self.__HM_WIDTH,self.__HM_LENGTH)
         return hm_array
                               
-    def __plot_core_heatmap(self, hm_array: np.array, pitch_kwargs: dict, hm_kwargs: dict) -> dict:
+    def __plot_core_heatmap(self, hm_array: np.array, pitch_kwargs: dict, hm_kwargs: dict, grid_kwargs: dict) -> dict:
         """Plot the core heatmap."""
+        
+        if pitch_kwargs is None:
+            pitch_kwargs = self.__default_pitch_kwargs
+        if hm_kwargs is None:
+            hm_kwargs = self.__default_heatmap_kwargs
+        if grid_kwargs is None:
+            grid_kwargs = self.__default_grid_kwargs
         
         if 'pitch_type' not in pitch_kwargs:
             pitch_kwargs['pitch_type'] = self.pitch_type
@@ -250,14 +265,7 @@ class TracabTf05Xml(ElementTree):
         
         #This comes from an example in the mplsoccer online documentation
         pitch = mpl.Pitch(**pitch_kwargs)
-        fig, axs = pitch.grid(endnote_height=0.03, endnote_space=0,
-                          # leave some space for the colorbar
-                          grid_width=0.88, left=0.025,
-                          title_height=0.06, title_space=0,
-                          # Turn off the endnote/title axis. I usually do this after
-                          # I am happy with the chart layout and text placement
-                          axis=False,
-                          grid_height=0.86)
+        fig, axs = pitch.grid(**grid_kwargs)
         if 'pitch_color' in pitch_kwargs:
             fig.set_facecolor(pitch_kwargs['pitch_color']) 
 
@@ -317,15 +325,17 @@ class TracabTf05Xml(ElementTree):
             raise ValueError("Invalid team argument: must be 'home', 'away', or the exact team name. Check your spelling")
         return this_team
     
-    def get_team_players(self, team: str) -> pd.DataFrame:
+    def get_team_players(self, team: str) -> dict:
         """Returns all of a team's players.
         
         Args:
             team: either 'home' or 'away' or the name of the team (exact spelling). 
 
         Returns:
-            A pandas dataframe, one row per player, with columns
-              ['name', 'id', 'jersey', 'team']. 
+            A dictionary of players:
+              'id': the player id
+              'jersey': the jersey number of tha player
+              'name': the name of the player
         """
         
         this_team = self.get_team(team)
@@ -338,10 +348,8 @@ class TracabTf05Xml(ElementTree):
             player_name.append(p.get('sPlayerName'))
             player_jersey.append(p.get('iJersey'))
         
-        players_df = pd.DataFrame.from_dict({'id': player_id, 'jersey': player_jersey, 'name': player_name})
-        players_df.sort_values(by='jersey', ignore_index=True)
-        players_df['team'] = this_team.get('sTeamName')
-        return players_df
+        return {'id': player_id, 'jersey': player_jersey, 'name': player_name}
+
 
     def get_team_possession(self, team: str) -> dict:
         """Returns a team's possession statistics.
@@ -361,7 +369,8 @@ class TracabTf05Xml(ElementTree):
         return {'avg_possession_time': avg_possession_time, 'pct_possession': pct_possession}
 
     
-    def team_heatmap(self, team: str, hm_type: str = 'overall', add_cbar: bool = False, pitch_kwargs: dict = None, hm_kwargs: dict = None):
+    def team_heatmap(self, team: str, hm_type: str = 'overall', add_cbar: bool = False, pitch_kwargs: dict = None,
+                     hm_kwargs: dict = None, grid_kwargs: dict = None) -> dict:
         """Plots a heatmap for a team.
         
         Plots a heatmap for the given team, cumulative over the entire duration of the match.
@@ -379,6 +388,8 @@ class TracabTf05Xml(ElementTree):
               If None, uses the default arguments (default is None).
             hm_kwargs: any keyword arguments that can be provided to pitch.heatmap().
               If None, uses the default arguments (default is None).
+            grid_kwargs: any keyword arguments that can be provided to pitch.grid().
+              If None, uses the default arguments (default is None).  
 
         Returns:
             A dictionary of handles to graphics objects for optional further manipulation, with keys:
@@ -398,13 +409,8 @@ class TracabTf05Xml(ElementTree):
             raise ValueError("Invalid heatmap type: must be one of ({}), but provided {}".format(valid_heatmaps, hm_type))
             
         hm_string = this_team.get(self.__team_heatmap_dict[hm_type])
-        hm_array = self.__make_heatmap_array(hm_string)
-        
-        if pitch_kwargs is None:
-            pitch_kwargs = self.__default_pitch_kwargs
-        if hm_kwargs is None:
-            hm_kwargs = self.__default_heatmap_kwargs
-        hm_params = self.__plot_core_heatmap(hm_array, pitch_kwargs, hm_kwargs)
+        hm_array = self.__make_heatmap_array(hm_string)      
+        hm_params = self.__plot_core_heatmap(hm_array, pitch_kwargs, hm_kwargs, grid_kwargs)
         
         # Add title
         if team == 'home':
@@ -430,7 +436,7 @@ class TracabTf05Xml(ElementTree):
 
 
     def team_possession_heatmap(self, team: str, possession: str = 'in', hm_type: str = 'overall', add_cbar: bool = False,
-                                pitch_kwargs: dict = None, hm_kwargs: dict = None) -> dict:
+                                pitch_kwargs: dict = None, hm_kwargs: dict = None, grid_kwargs: dict = None) -> dict:
         """Plots a possession heatmap for a team.
         
         Plots a possession heatmap for the given team: can be in-possession or out-of-possession,
@@ -449,6 +455,8 @@ class TracabTf05Xml(ElementTree):
             pitch_kwargs: any keyword arguments that can be provided to mplsoccer.Pitch().
               If None, uses the default arguments (default is None).
             hm_kwargs: any keyword arguments that can be provided to pitch.heatmap().
+              If None, uses the default arguments (default is None).
+            grid_kwargs: any keyword arguments that can be provided to pitch.grid().
               If None, uses the default arguments (default is None).
 
         Returns:
@@ -478,12 +486,7 @@ class TracabTf05Xml(ElementTree):
             raise ValueError("Invalid heatmap type: must be one of ({}), but provided {}".format(valid_heatmaps, hm_type)) 
         hm_string = possession_data.get(self.__possession_heatmap_dict[hm_type])
         hm_array = self.__make_heatmap_array(hm_string)
-        
-        if pitch_kwargs is None:
-            pitch_kwargs = self.__default_pitch_kwargs
-        if hm_kwargs is None:
-            hm_kwargs = self.__default_heatmap_kwargs
-        hm_params = self.__plot_core_heatmap(hm_array, pitch_kwargs, hm_kwargs)
+        hm_params = self.__plot_core_heatmap(hm_array, pitch_kwargs, hm_kwargs, grid_kwargs)
             
          # BEGIN Add title
         if team == 'home':
@@ -509,8 +512,8 @@ class TracabTf05Xml(ElementTree):
             possession_stats = self.get_team_possession(team)
             # Note y coordinate: placement is below the previous title, and the font is smaller so this results in a sub-title
             _ = axs['title'].text(0.5, 0.05, 
-                                        f"Possession: {possession_stats['pct_possession']:.0f}% Avg. time/possession:{possession_stats['avg_possession_time']: 1.1f}s",
-                                         color='white', va='center', ha='center', fontsize=15)
+                                  f"Possession: {possession_stats['pct_possession']:.0f}% Avg. time/possession:{possession_stats['avg_possession_time']: 1.1f}s",
+                                  color='white', va='center', ha='center', fontsize=15)
         # END Add title
         
         # Put the match info in the endnote
@@ -556,7 +559,8 @@ class TracabTf05Xml(ElementTree):
         return (player_node, player_team)
     
     
-    def player_heatmap(self, player: Union[str,int], add_cbar: bool = False, pitch_kwargs: dict = None, hm_kwargs: dict = None) -> dict:
+    def player_heatmap(self, player: Union[str,int], add_cbar: bool = False, pitch_kwargs: dict = None, 
+                       hm_kwargs: dict = None, grid_kwargs: dict = None) -> dict:
         """Plots the overall, whole-game heatmap and average location of a player. 
         
         Args:
@@ -565,6 +569,8 @@ class TracabTf05Xml(ElementTree):
           pitch_kwargs: any keyword arguments that can be provided to mplsoccer.Pitch().
               If None, uses the default arguments (default is None).
           hm_kwargs: any keyword arguments that can be provided to pitch.heatmap().
+              If None, uses the default arguments (default is None).
+          grid_kwargs: any keyword arguments that can be provided to pitch.grid().
               If None, uses the default arguments (default is None).
 
         Returns:
@@ -585,12 +591,7 @@ class TracabTf05Xml(ElementTree):
         avg_y = -1.0 * float(this_player.get('fAvgPosY'))
         hm_string = this_player.get('sHeatmap')
         hm_array = self.__make_heatmap_array(hm_string)
-        
-        if pitch_kwargs is None:
-            pitch_kwargs = self.__default_pitch_kwargs
-        if hm_kwargs is None:
-            hm_kwargs = self.__default_heatmap_kwargs
-        hm_params = self.__plot_core_heatmap(hm_array, pitch_kwargs, hm_kwargs)
+        hm_params = self.__plot_core_heatmap(hm_array, pitch_kwargs, hm_kwargs, grid_kwargs)
         axs = hm_params['axs']
         pitch = hm_params['pitch']
         pitch.scatter(avg_x, avg_y, s=100, c='red', marker='o', ax=axs['pitch'])
@@ -610,7 +611,8 @@ class TracabTf05Xml(ElementTree):
         return hm_params
 
     def player_possession_heatmap(self, player: Union[str,int], possession: str = 'in', hm_type: str = 'overall',
-                                  add_cbar: bool = False, pitch_kwargs: dict = None, hm_kwargs: dict = None) -> dict:
+                                  add_cbar: bool = False, pitch_kwargs: dict = None, hm_kwargs: dict = None,
+                                  grid_kwargs: dict = None) -> dict:
         """Plots a possession heatmap for a player.
         
         Plots a possession heatmap for a player: can be in-possession or out-of-possession,
@@ -640,6 +642,8 @@ class TracabTf05Xml(ElementTree):
               If None, uses the default arguments (default is None).
             hm_kwargs: any keyword arguments that can be provided to pitch.heatmap().
               If None, uses the default arguments (default is None).
+            grid_kwargs: any keyword arguments that can be provided to pitch.grid().
+              If None, uses the default arguments (default is None).  
 
         Returns:
             A dictionary of handles to graphics objects for optional further manipulation, with keys:
@@ -669,12 +673,7 @@ class TracabTf05Xml(ElementTree):
             raise ValueError("Invalid heatmap type: must be one of ({}), but provided {}".format(valid_heatmaps, hm_type)) 
         hm_string = possession_data.get(self.__possession_heatmap_dict[hm_type])
         hm_array = self.__make_heatmap_array(hm_string)
-        
-        if pitch_kwargs is None:
-            pitch_kwargs = self.__default_pitch_kwargs
-        if hm_kwargs is None:
-            hm_kwargs = self.__default_heatmap_kwargs
-        hm_params = self.__plot_core_heatmap(hm_array, pitch_kwargs, hm_kwargs) 
+        hm_params = self.__plot_core_heatmap(hm_array, pitch_kwargs, hm_kwargs, grid_kwargs) 
         
         # BEGIN Add title
         if possession == 'in':

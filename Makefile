@@ -41,7 +41,7 @@ uninstall:
 	pip uninstall tfutils
 
 dev-install:  ## install the package with dev capability to the active environment's site-packages
-	pip install -e .
+	pip install -r requirements.txt -e .
 
 install: ## install  the package to the active environment's site-packages
-	pip install .
+	pip install -r requirements.txt .
