@@ -100,7 +100,7 @@ source.get_team_players('away')
 
 # ... you can also use the team name itself and put the resulting dictionary in a dataframe
 team_players = source.get_team_players('Mauritania')
-players_df = pd.DataFrame.from_dict(players)
+players_df = pd.DataFrame.from_dict(team_players)
 players_df
 ```
 ![image](https://user-images.githubusercontent.com/2517549/201769043-a0fbd8cb-f1ac-4788-86eb-0408667dd373.png)
