@@ -3,6 +3,7 @@
 
 Utilities to parse, explore, and plot soccer data from XML files 
 by data provider Tracab. Currently only TF05 XML files are supported. 
+See also the [companion blog post](https://www.lucacazzanti.net/blog/posts/2022-11-15-tfutils/2022-11-15-tfutils.html)
 Main features:
 
 * Uses soccer sematics to access entitites like teams and players.
