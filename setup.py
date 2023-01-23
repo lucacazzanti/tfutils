@@ -11,7 +11,7 @@ setuptools.setup(
     description="Tracab soccer data file utilities",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://gitlab.corp.zulily.com/datascience/dskit",
+    url="https://gihub.com/lucacazzanti/tfutils",
     packages=setuptools.find_packages(),
     python_requires='>=3.9',
 )
